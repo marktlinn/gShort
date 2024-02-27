@@ -6,21 +6,35 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"time"
 )
 
 func main() {
-	addr := flag.String("addr", "localhost:8000", "The address of the sever")
+	var (
+		addr    = flag.String("addr", "localhost:8000", "The address of the sever")
+		timeout = flag.Duration(
+			"t",
+			10*time.Second,
+			"sets the duration for which the server will wait for requests before a timeout",
+		)
+	)
 	flag.Parse()
 
 	fmt.Fprintln(os.Stderr, "Server starting on: ", *addr)
 
 	shortr := http.HandlerFunc(
-		func(w http.ResponseWriter, r *http.Request) {
+		func(w http.ResponseWriter, _ *http.Request) {
 			fmt.Fprintln(w, "testing server out...")
 		},
 	)
 
-	if err := http.ListenAndServe(*addr, shortr); !errors.Is(err, http.ErrServerClosed) {
+	server := &http.Server{
+		Addr:        *addr,
+		Handler:     http.TimeoutHandler(shortr, *timeout, "timeout"),
+		ReadTimeout: *timeout,
+	}
+
+	if err := server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 		fmt.Fprintln(os.Stderr, "err, server closed unexpectedly: %w", err)
 	}
 }
