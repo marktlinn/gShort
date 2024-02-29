@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/marktlinn/gShort/short_server"
 )
 
 func main() {
@@ -22,15 +24,12 @@ func main() {
 
 	fmt.Fprintln(os.Stderr, "Server starting on: ", *addr)
 
-	shortr := http.HandlerFunc(
-		func(w http.ResponseWriter, _ *http.Request) {
-			fmt.Fprintln(w, "testing server out...")
-		},
-	)
+	shortServer := &short_server.Server{}
+	shortServer.RegisterRoutes()
 
 	server := &http.Server{
 		Addr:        *addr,
-		Handler:     http.TimeoutHandler(shortr, *timeout, "timeout"),
+		Handler:     http.TimeoutHandler(shortServer, *timeout, "timeout"),
 		ReadTimeout: *timeout,
 	}
 

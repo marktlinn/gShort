@@ -3,7 +3,6 @@ package short_server
 import (
 	"fmt"
 	"net/http"
-	"strings"
 )
 
 const (
@@ -13,24 +12,15 @@ const (
 )
 
 type Server struct {
-	// TODO
+	http.Handler
 }
 
 func (s *Server) RegisterRoutes() {
-	// TODO
-}
-
-func (s *Server) SeverHTTP(w http.ResponseWriter, r *http.Request) {
-	switch p := r.URL.Path; {
-	case p == shorteningRoute:
-		handleShorten(w, r)
-	case strings.HasPrefix(p, resolvedRoute):
-		handleResolve(w, r)
-	case p == healthCheckRoute:
-		handleHealthRoute(w, r)
-	default:
-		http.NotFound(w, r)
-	}
+	mux := http.NewServeMux()
+	mux.HandleFunc(shorteningRoute, handleShorten)
+	mux.HandleFunc(resolvedRoute, handleResolve)
+	mux.HandleFunc(healthCheckRoute, handleHealthRoute)
+	s.Handler = mux
 }
 
 func handleShorten(w http.ResponseWriter, _ *http.Request) {
