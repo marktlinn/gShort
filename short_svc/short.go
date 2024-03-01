@@ -28,7 +28,7 @@ func validateKey(k string) error {
 
 // validate the passed link, ensuring it has a Host and
 // the correct Scheme
-func validateLink(ln Link) error {
+func (ln Link) validateLink() error {
 	if err := validateKey(ln.Key); err != nil {
 		return err
 	}
