@@ -1,8 +1,12 @@
 package short_server
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
+
+	"github.com/marktlinn/gShort/bite"
+	shortsvc "github.com/marktlinn/gShort/short_svc"
 )
 
 const (
@@ -23,16 +27,53 @@ func (s *Server) RegisterRoutes() {
 	s.Handler = mux
 }
 
-func handleShorten(w http.ResponseWriter, _ *http.Request) {
+func handleShorten(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(
+			w,
+			"method not allowed: should be POST",
+			http.StatusMethodNotAllowed,
+		)
+		return
+	}
+
+	ln := shortsvc.Link{
+		Key: r.FormValue("key"),
+		URL: r.FormValue("url"),
+	}
+	if err := shortsvc.Create(r.Context(), ln); err != nil {
+		handleError(w, err)
+		return
+	}
+
 	w.WriteHeader(http.StatusCreated)
 	fmt.Fprintln(w, "go")
 }
 
 func handleResolve(w http.ResponseWriter, r *http.Request) {
-	const uri = "https://go.dev"
-	http.Redirect(w, r, uri, http.StatusFound)
+	key := r.URL.Path[len(resolvedRoute):]
+
+	ln, err := shortsvc.Retrieve(r.Context(), key)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+	http.Redirect(w, r, ln.URL, http.StatusFound)
 }
 
 func handleHealthRoute(w http.ResponseWriter, _ *http.Request) {
 	fmt.Fprintln(w, "OK")
+}
+
+func handleError(w http.ResponseWriter, err error) {
+	switch {
+	case err == nil:
+		return
+	case errors.Is(err, bite.ErrInvalidRequest):
+		http.Error(w, err.Error(), http.StatusBadRequest)
+	case errors.Is(err, bite.ErrNotExists):
+		http.Error(w, err.Error(), http.StatusNotFound)
+	case errors.Is(err, bite.ErrExists):
+		http.Error(w, err.Error(), http.StatusConflict)
+	}
 }
