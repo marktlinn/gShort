@@ -33,7 +33,7 @@ func main() {
 		Handler:     http.TimeoutHandler(shortServer, *timeout, "timeout"),
 		ReadTimeout: *timeout,
 	}
-	if os.Getenv("BITE_DEBUG") == "1" {
+	if os.Getenv("DEBUG_MODE") == "1" {
 		server.Handler = httpio.LoggerMiddleware(server.Handler)
 	}
 	if err := server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
