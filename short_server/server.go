@@ -41,7 +41,7 @@ func handleShorten(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var ln shortsvc.Link
-	if err := httpio.Decode(r.Body, &ln); err != nil {
+	if err := httpio.Decode(http.MaxBytesReader(w, r.Body, 2_048), &ln); err != nil {
 		http.Error(w, "cannot decode JSON", http.StatusBadRequest)
 		return
 	}

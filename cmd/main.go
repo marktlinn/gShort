@@ -8,6 +8,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/marktlinn/gShort/httpio"
 	"github.com/marktlinn/gShort/short_server"
 )
 
@@ -32,7 +33,9 @@ func main() {
 		Handler:     http.TimeoutHandler(shortServer, *timeout, "timeout"),
 		ReadTimeout: *timeout,
 	}
-
+	if os.Getenv("BITE_DEBUG") == "1" {
+		server.Handler = httpio.LoggerMiddleware(server.Handler)
+	}
 	if err := server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 		fmt.Fprintln(os.Stderr, "err, server closed unexpectedly: %w", err)
 	}
