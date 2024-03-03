@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/marktlinn/gShort/bite"
+	"github.com/marktlinn/gShort/httpio"
 	shortsvc "github.com/marktlinn/gShort/short_svc"
 )
 
@@ -39,17 +40,20 @@ func handleShorten(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ln := shortsvc.Link{
-		Key: r.FormValue("key"),
-		URL: r.FormValue("url"),
+	var ln shortsvc.Link
+	if err := httpio.Decode(r.Body, &ln); err != nil {
+		http.Error(w, "cannot decode JSON", http.StatusBadRequest)
+		return
 	}
+
 	if err := shortsvc.Create(r.Context(), ln); err != nil {
 		handleError(w, err)
 		return
 	}
 
-	w.WriteHeader(http.StatusCreated)
-	fmt.Fprintln(w, "go")
+	httpio.Encode(w, http.StatusCreated, map[string]any{
+		"key": ln.Key,
+	})
 }
 
 // The route path is stripped from the Request in the process.
