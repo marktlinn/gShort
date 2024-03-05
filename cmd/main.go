@@ -3,7 +3,7 @@ package main
 import (
 	"errors"
 	"flag"
-	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"time"
@@ -23,7 +23,8 @@ func main() {
 	)
 	flag.Parse()
 
-	fmt.Fprintln(os.Stderr, "Server starting on: ", *addr)
+	logger := log.New(os.Stderr, "gShort:  ", log.LstdFlags|log.Lmsgprefix)
+	logger.Println("Server starting on: ", *addr)
 
 	shortServer := &short_server.Server{}
 	shortServer.RegisterRoutes()
@@ -34,9 +35,10 @@ func main() {
 		ReadTimeout: *timeout,
 	}
 	if os.Getenv("DEBUG_MODE") == "1" {
+		server.ErrorLog = logger
 		server.Handler = httpio.LoggerMiddleware(server.Handler)
 	}
 	if err := server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
-		fmt.Fprintln(os.Stderr, "err, server closed unexpectedly: %w", err)
+		logger.Println("err, server closed unexpectedly: %w", err)
 	}
 }
